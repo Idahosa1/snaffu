@@ -1,0 +1,3024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Snaffu — iOS 27.0.1</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Apple iOS 27 System Grays */
+      --bg:              #F2F2F7;
+      --bg-card:         #FFFFFF;
+      --label:           #000000;
+      --label-secondary: rgba(60,60,67,.65);
+      --label-tertiary:  rgba(60,60,67,.35);
+      --separator:       rgba(60,60,67,.12);
+
+      /* Brand Tint — Vibrant Culinary Crimson/Amber */
+      --tint:            #FF3B30;
+      --tint-gradient:   linear-gradient(135deg, #FF453A 0%, #FF2D55 100%);
+      --tint-subtle:     rgba(255,59,48,.12);
+
+      --green:           #34C759;
+      --blue:            #007AFF;
+
+      /* Motion */
+      --ease-out:   cubic-bezier(0.23, 1, 0.32, 1);
+      --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+      font-family: -apple-system, "SF Pro Display", "SF Pro Text", BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: #121214;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .phone-frame {
+      width: 393px;
+      height: 852px;
+      background: var(--bg);
+      border-radius: 54px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.1),
+        0 0 0 11px #1C1C1E,
+        0 0 0 12px rgba(255,255,255,.18),
+        0 50px 100px rgba(0,0,0,.7);
+    }
+
+    .dynamic-island {
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 36px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 300;
+    }
+
+    /* ─── APPLE MUSIC FLOATING DOCK (3 TABS + SNAP CIRCLE) ─── */
+    .floating-music-bar-container {
+      position: absolute;
+      bottom: 28px;
+      left: 18px;
+      right: 18px;
+      z-index: 250;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    /* Left pill dock containing 3 tabs (Home, My Snaps, Saved) */
+    .floating-tab-island {
+      flex: 1;
+      height: 64px;
+      border-radius: 32px;
+      background: rgba(255,255,255,.84);
+      backdrop-filter: blur(35px) saturate(210%);
+      -webkit-backdrop-filter: blur(35px) saturate(210%);
+      border: 1px solid rgba(255,255,255,.9);
+      box-shadow: 0 12px 36px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 5px 6px;
+      pointer-events: auto;
+    }
+
+    .island-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 16px;
+      border-radius: 24px;
+      transition: all 180ms var(--ease-out);
+      position: relative;
+      flex: 1;
+      height: 100%;
+    }
+    .island-tab:active { transform: scale(0.92); }
+
+    /* Frosted bubble background on active tab (Apple Music reference) */
+    .island-tab.active {
+      background: rgba(0,0,0,.06);
+    }
+
+    /* Hugeicons Stroke Style */
+    .huge-icon {
+      width: 22px;
+      height: 22px;
+      stroke: var(--label);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: stroke 150ms ease, fill 150ms ease;
+    }
+    .island-tab.active .huge-icon {
+      stroke: var(--tint);
+      fill: var(--tint);
+    }
+
+    .island-tab-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--label);
+      letter-spacing: -0.1px;
+      transition: color 150ms ease;
+    }
+    .island-tab.active .island-tab-label {
+      color: var(--tint);
+      font-weight: 600;
+    }
+
+    /* Right floating circular button in primary color (Snap Meal) */
+    .floating-snap-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--tint-gradient);
+      border: 1px solid rgba(255,255,255,.3);
+      box-shadow: 0 10px 28px rgba(255,59,48,.45), inset 0 1px 0 rgba(255,255,255,.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      flex-shrink: 0;
+      transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .floating-snap-circle:active {
+      transform: scale(0.92);
+      box-shadow: 0 4px 14px rgba(255,59,48,.4);
+    }
+    .floating-snap-circle svg {
+      width: 26px; height: 26px;
+      stroke: #fff;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ─── Top Glass Nav ─── */
+    .top-glass-nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 96px;
+      padding: 52px 20px 10px;
+      background: rgba(242,242,247,.75);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--separator);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    .app-logo {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.8px;
+      color: var(--label);
+    }
+    .app-logo span { color: var(--tint); }
+
+    .nav-profile-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid var(--separator);
+      background: var(--bg-card);
+      overflow: hidden;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 140ms var(--ease-out);
+      -webkit-tap-highlight-color: transparent;
+      z-index: 150;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .nav-profile-btn:active {
+      transform: scale(0.92);
+    }
+    .nav-profile-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* ─── Scroll Content ─── */
+    .scroll-pane {
+      position: absolute;
+      top: 96px; bottom: 0; left: 0; right: 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 16px 20px 130px;
+      display: none;
+    }
+    .scroll-pane::-webkit-scrollbar { display: none; }
+    .scroll-pane.active { display: block; }
+
+    /* ─── Greeting Section ─── */
+    .greeting-header {
+      margin-bottom: 22px;
+    }
+    .greeting-eyebrow {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--label-secondary);
+      letter-spacing: -0.1px;
+      margin-bottom: 6px;
+    }
+    .greeting-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .greeting-title {
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      color: var(--label);
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0;
+      flex: 1;
+    }
+
+    /* ─── Inspiration Carousel ─── */
+    .carousel-section {
+      margin-bottom: 28px;
+    }
+    .section-headline {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+      color: var(--label);
+    }
+    .section-sublink {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--tint);
+      cursor: pointer;
+    }
+
+    .carousel-track {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding: 4px 2px 12px;
+      margin: 0 -20px;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .carousel-track::-webkit-scrollbar { display: none; }
+
+    .carousel-card {
+      flex: 0 0 220px;
+      background: var(--bg-card);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: none;
+      border: 1px solid var(--separator);
+      cursor: pointer;
+      transition: transform 180ms var(--ease-out);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .carousel-card:active { transform: scale(0.96); }
+
+    .carousel-card-img-wrap {
+      width: 100%; height: 140px; position: relative; overflow: hidden;
+    }
+    .carousel-card-img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 300ms var(--ease-out);
+    }
+    .carousel-card:hover .carousel-card-img { transform: scale(1.04); }
+
+    .carousel-meal-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 4px 9px;
+      border-radius: 12px;
+      font-size: 11px; font-weight: 600; color: var(--label);
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+
+    .carousel-card-body { padding: 14px; }
+    .carousel-card-title {
+      font-size: 15px; font-weight: 600; color: var(--label); letter-spacing: -0.2px; margin-bottom: 6px; line-height: 1.25;
+    }
+    .carousel-card-meta {
+      display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--label-secondary); font-weight: 500;
+    }
+    .carousel-card-meta svg {
+      width: 13px; height: 13px; stroke: var(--label-secondary); stroke-width: 1.8; fill: none;
+    }
+
+    /* ─── Snaps List ─── */
+    .snaps-vertical-list {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .snap-card-row {
+      display: flex; align-items: center; gap: 14px; background: var(--bg-card); padding: 12px 14px;
+      border-radius: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.04);
+      transition: transform 140ms var(--ease-out);
+    }
+    .snap-card-row:active { transform: scale(0.98); }
+
+    .snap-thumb-wrap {
+      width: 64px; height: 64px; border-radius: 14px; overflow: hidden; flex-shrink: 0;
+      outline: 1px solid rgba(0,0,0,.08); outline-offset: -1px;
+    }
+    .snap-thumb-img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    .snap-info { flex: 1; min-width: 0; }
+    .snap-title-text {
+      font-size: 15px; font-weight: 600; color: var(--label); letter-spacing: -0.2px; margin-bottom: 4px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .snap-tags-row {
+      display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--label-secondary);
+    }
+    .meal-type-tag {
+      font-size: 10px; font-weight: 600; color: var(--tint); background: var(--tint-subtle); padding: 2px 7px; border-radius: 6px;
+    }
+
+    /* ─── Search Box & Chips ─── */
+    .glass-search-box {
+      background: rgba(120,120,128,.1); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .glass-search-box svg {
+      width: 18px; height: 18px; stroke: var(--label-secondary); stroke-width: 1.8; fill: none;
+    }
+    .glass-search-box input {
+      border: none; background: transparent; outline: none; font-size: 15px; width: 100%; color: var(--label);
+    }
+
+    .chip-scroll {
+      display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 18px;
+    }
+    .chip-scroll::-webkit-scrollbar { display: none; }
+    .type-chip {
+      background: var(--bg-card); border: 1px solid rgba(0,0,0,.05); padding: 8px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .type-chip.active { background: var(--tint); color: #fff; border-color: var(--tint); }
+
+    /* ─── Recipe Detail Modal ─── */
+    .modal-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0); z-index: 400; display: flex; flex-direction: column; justify-content: flex-end;
+      pointer-events: none; transition: background 250ms ease;
+    }
+    .modal-overlay.open { background: rgba(0,0,0,.5); pointer-events: auto; }
+    .modal-sheet {
+      background: var(--bg); border-radius: 30px 30px 0 0; max-height: 88%; overflow-y: auto; transform: translateY(100%);
+      transition: transform 340ms var(--ease-drawer); padding: 0 20px 48px;
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 40px; height: 5px; background: rgba(60,60,67,.2); border-radius: 3px; margin: 12px auto 16px;
+    }
+
+    .detail-hero-card {
+      background: var(--bg-card); border-radius: 22px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    }
+    .detail-hero-img {
+      width: 100%; height: 180px; object-fit: cover; display: block;
+    }
+    .detail-hero-content { padding: 18px; }
+    .detail-top-row {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
+    .detail-title {
+      font-size: 24px; font-weight: 600; color: var(--label); margin-bottom: 8px;
+    }
+    .detail-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--label-secondary);
+      font-weight: 500;
+    }
+    .detail-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .detail-meta-item svg {
+      width: 15px;
+      height: 15px;
+      stroke: var(--label-secondary);
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .detail-meta-dot {
+      color: var(--label-tertiary);
+      font-size: 11px;
+    }
+    .bookmark-action-btn {
+      background: none; border: none; cursor: pointer;
+    }
+    .bookmark-action-btn svg {
+      width: 24px; height: 24px; stroke: var(--tint); stroke-width: 1.8; fill: none;
+    }
+    .bookmark-action-btn.saved svg { fill: var(--tint); }
+
+    .cook-gradient-btn {
+      width: 100%; height: 54px; border-radius: 18px; border: none; background: var(--tint-gradient); color: #fff; font-size: 16px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; margin-bottom: 18px;
+      transition: transform 140ms var(--ease-out), opacity 140ms ease;
+    }
+    .cook-gradient-btn:active { transform: scale(0.97); opacity: 0.9; }
+    .cook-gradient-btn svg { width: 20px; height: 20px; fill: #fff; }
+
+    .content-box {
+      background: var(--bg-card); border-radius: 18px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .content-box-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+
+    .ing-item {
+      display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--separator); cursor: pointer;
+    }
+    .ing-item:last-child { border-bottom: none; }
+    .ing-check-circle {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--label-tertiary); display: flex; align-items: center; justify-content: center;
+    }
+    .ing-item.checked .ing-check-circle { background: var(--green); border-color: var(--green); }
+    .ing-item.checked .ing-check-circle svg { display: block; }
+    .ing-check-circle svg { width: 12px; height: 12px; stroke: #fff; stroke-width: 2.5; fill: none; display: none; }
+    .ing-item.checked .ing-label { text-decoration: line-through; color: var(--label-tertiary); }
+    .ing-label { flex: 1; font-size: 15px; color: var(--label); }
+    .ing-qty { font-size: 14px; font-weight: 500; color: var(--label-secondary); }
+
+    .step-numbered {
+      display: flex; gap: 14px; margin-bottom: 16px;
+    }
+    .step-badge {
+      width: 26px; height: 26px; border-radius: 50%; background: var(--tint); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-desc { font-size: 15px; line-height: 1.45; color: var(--label); }
+
+    /* ─── Fullscreen Cook Mode ─── */
+    .cook-mode-overlay {
+      position: absolute; inset: 0; background: var(--bg); z-index: 500; display: flex; flex-direction: column; padding: 56px 20px 24px;
+      transform: translateY(100%); transition: transform 380ms var(--ease-drawer);
+    }
+    .cook-mode-overlay.open { transform: translateY(0); }
+
+    .cook-top-bar {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .cook-close-circle {
+      width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--bg-card); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .cook-close-circle svg { width: 16px; height: 16px; stroke: var(--label); stroke-width: 2; fill: none; }
+
+    .cook-progress-track {
+      width: 100%; height: 6px; background: rgba(120,120,128,.15); border-radius: 3px; overflow: hidden; margin-bottom: 24px;
+    }
+    .cook-progress-fill {
+      height: 100%; background: var(--tint); width: 33%; transition: width 300ms var(--ease-out);
+    }
+
+    .cook-main-card {
+      background: var(--bg-card); border-radius: 26px; padding: 26px; box-shadow: 0 4px 20px rgba(0,0,0,.06); flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .cook-step-pill {
+      display: inline-block; font-size: 12px; font-weight: 600; color: var(--tint); background: var(--tint-subtle); padding: 5px 12px; border-radius: 12px; letter-spacing: 1px;
+    }
+    .cook-step-text {
+      font-size: 22px; font-weight: 500; line-height: 1.5; color: var(--label); margin: 22px 0;
+    }
+
+    .cook-timer-panel {
+      background: var(--bg); border-radius: 18px; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .cook-timer-big {
+      font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums;
+    }
+    .timer-toggle-btn {
+      width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--tint); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .timer-toggle-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    .cook-bottom-actions {
+      display: flex; gap: 12px; margin-top: 18px;
+    }
+    .cook-arrow-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--bg-card); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .cook-arrow-btn svg { width: 20px; height: 20px; stroke: var(--label); stroke-width: 2; fill: none; }
+    .cook-advance-btn {
+      flex: 1; height: 56px; border-radius: 18px; border: none; background: var(--tint-gradient); color: #fff; font-size: 17px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .cook-advance-btn svg { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.2; fill: none; }
+
+    /* Scanning Screen */
+    /* ─── Camera Viewfinder Overlay ─── */
+    .camera-overlay {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 550;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+      transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+    }
+    .camera-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .camera-top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 94px;
+      padding: 50px 20px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,0) 100%);
+    }
+
+    .cam-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,.2);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      transition: transform 120ms ease;
+    }
+    .cam-btn:active { transform: scale(0.9); }
+    .cam-btn svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 1.8; fill: none; }
+
+    .camera-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.2px;
+    }
+
+    .camera-viewport-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    #cameraVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .camera-reticle {
+      position: absolute;
+      width: 270px;
+      height: 270px;
+      border: 1px dashed rgba(255,255,255,.25);
+      border-radius: 28px;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.35);
+    }
+    .reticle-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: #fff;
+      border-style: solid;
+    }
+    .reticle-corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 12px; }
+    .reticle-corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 12px; }
+    .reticle-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 12px; }
+    .reticle-corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 12px; }
+
+    .reticle-hint {
+      position: absolute;
+      bottom: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,.8);
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    }
+
+    .camera-permission-fallback {
+      position: absolute;
+      inset: 20px;
+      background: rgba(28,28,30,.92);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.15);
+      padding: 30px 24px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 25;
+    }
+    .fallback-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--tint-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .fallback-icon svg { width: 32px; height: 32px; stroke: var(--tint); stroke-width: 1.8; fill: none; }
+    .fallback-title {
+      font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 8px;
+    }
+    .fallback-desc {
+      font-size: 13px; line-height: 1.45; color: rgba(255,255,255,.7); margin-bottom: 18px;
+    }
+    .fallback-action-btn {
+      padding: 12px 20px;
+      border-radius: 16px;
+      border: none;
+      background: var(--tint-gradient);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 120ms ease;
+    }
+    .fallback-action-btn:active { transform: scale(0.96); }
+    .fallback-action-btn.secondary {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+    }
+
+    .camera-bottom-bar {
+      height: 130px;
+      padding: 10px 36px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(0deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,0) 100%);
+      z-index: 20;
+    }
+
+    .cam-album-btn, .cam-flip-btn {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,.18);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 140ms ease;
+      color: #fff;
+    }
+    .cam-album-btn:active, .cam-flip-btn:active { transform: scale(0.92); }
+    .cam-album-btn svg, .cam-flip-btn svg { width: 22px; height: 22px; stroke: #fff; stroke-width: 1.8; fill: none; }
+
+    .cam-shutter-btn {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: none;
+      border: 4px solid #fff;
+      padding: 4px;
+      cursor: pointer;
+      transition: transform 140ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cam-shutter-btn:active { transform: scale(0.92); }
+    .shutter-inner {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      background: var(--tint-gradient);
+    }
+
+    /* ─── Profile Modal Controls ─── */
+    .profile-setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--separator);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--label);
+      min-height: 52px;
+    }
+    .profile-setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 51px;
+      height: 31px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+    .ios-switch-slider {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(120, 120, 128, 0.22);
+      transition: background-color 200ms ease;
+      border-radius: 31px;
+    }
+    .ios-switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 27px;
+      width: 27px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 0.5px 1px rgba(0, 0, 0, 0.08);
+      transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+      border-radius: 50%;
+    }
+    .ios-switch input:checked + .ios-switch-slider {
+      background-color: var(--green);
+    }
+    .ios-switch input:checked + .ios-switch-slider:before {
+      transform: translateX(20px);
+    }
+
+    .ios-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(120, 120, 128, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 10px;
+      padding: 7px 30px 7px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--label);
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+    .ios-select:focus {
+      outline: none;
+      border-color: var(--tint);
+      background-color: rgba(120, 120, 128, 0.12);
+    }
+
+    /* ─── Profile Page Screen (Full page instead of slider) ─── */
+    .profile-page-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 450;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1), visibility 280ms ease;
+      overflow: hidden;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .profile-page-screen.open {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .profile-page-nav {
+      height: 94px;
+      padding: 50px 18px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(242, 242, 247, 0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--separator);
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .profile-back-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--tint);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 4px;
+      border-radius: 8px;
+      transition: opacity 140ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .profile-back-btn:active {
+      opacity: 0.6;
+    }
+    .profile-back-btn svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--tint);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .profile-page-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--label);
+      letter-spacing: -0.3px;
+    }
+
+    .profile-page-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px 110px;
+      scrollbar-width: none;
+    }
+    .profile-page-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* User Card & Editable Avatar */
+    .profile-user-card {
+      background: var(--bg-card);
+      border-radius: 22px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    }
+
+    .avatar-edit-wrapper {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .avatar-edit-wrapper img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--tint);
+      display: block;
+      transition: opacity 150ms ease;
+    }
+    .avatar-edit-wrapper:hover img {
+      opacity: 0.85;
+    }
+
+    .avatar-edit-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--tint);
+      border: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      transition: transform 140ms ease;
+    }
+    .avatar-edit-wrapper:active .avatar-edit-badge {
+      transform: scale(0.9);
+    }
+    .avatar-edit-badge svg {
+      width: 13px;
+      height: 13px;
+      stroke: #fff;
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    .profile-user-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .profile-user-name {
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--label);
+      letter-spacing: -0.3px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .profile-user-bio {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--label-secondary);
+      margin-top: 3px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* Functional Edit CTA Button */
+    .profile-edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 18px;
+      background: var(--tint-subtle);
+      border: none;
+      color: var(--tint);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 140ms var(--ease-out), background-color 140ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .profile-edit-btn:active {
+      transform: scale(0.95);
+      background: rgba(255, 59, 48, 0.18);
+    }
+    .profile-edit-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--tint);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* ─── Edit Profile Slider Modal ─── */
+    .edit-profile-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0);
+      z-index: 520;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      pointer-events: none;
+      transition: background 240ms ease, opacity 240ms ease;
+      opacity: 0;
+    }
+    .edit-profile-overlay.open {
+      background: rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+      opacity: 1;
+    }
+
+    .edit-profile-sheet {
+      background: var(--bg);
+      border-radius: 30px 30px 0 0;
+      padding: 0 20px 36px;
+      transform: translateY(100%);
+      transition: transform 320ms var(--ease-drawer);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.16);
+      max-height: 85%;
+      overflow-y: auto;
+    }
+    .edit-profile-overlay.open .edit-profile-sheet {
+      transform: translateY(0);
+    }
+
+    .edit-sheet-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .edit-sheet-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+      color: var(--label);
+    }
+    .edit-sheet-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(120, 120, 128, 0.12);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 120ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .edit-sheet-close-btn:active {
+      transform: scale(0.9);
+    }
+    .edit-sheet-close-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--label);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .edit-field-group {
+      margin-bottom: 16px;
+    }
+    .edit-field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label-secondary);
+      margin-bottom: 6px;
+      letter-spacing: -0.1px;
+    }
+    .edit-field-input,
+    .edit-field-textarea {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--separator);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 16px;
+      color: var(--label);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .edit-field-input:focus,
+    .edit-field-textarea:focus {
+      border-color: var(--tint);
+      box-shadow: 0 0 0 3px var(--tint-subtle);
+    }
+    .edit-field-textarea {
+      resize: none;
+      line-height: 1.4;
+    }
+
+    .save-changes-btn {
+      width: 100%;
+      height: 52px;
+      border-radius: 16px;
+      border: none;
+      background: var(--tint-gradient);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      margin-top: 22px;
+      transition: transform 140ms var(--ease-out), opacity 140ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .save-changes-btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .profile-section-heading {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin: 18px 0 8px 6px;
+    }
+
+    .profile-setting-row.clickable {
+      cursor: pointer;
+      transition: background-color 140ms ease;
+    }
+    .profile-setting-row.clickable:active {
+      background-color: rgba(0,0,0,0.03);
+    }
+    .profile-setting-row.non-clickable {
+      cursor: default;
+    }
+
+    /* ─── Splash Screen ─── */
+    .splash-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--tint-gradient);
+      z-index: 950;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 450ms var(--ease-out), transform 450ms var(--ease-out), visibility 450ms;
+      visibility: visible;
+    }
+    .splash-screen.fade-out {
+      opacity: 0;
+      transform: scale(1.06);
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .splash-brand-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: splashPop 700ms var(--ease-out) forwards;
+    }
+    @keyframes splashPop {
+      0% { transform: scale(0.92); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .splash-logo-title {
+      font-size: 60px;
+      font-weight: 700;
+      letter-spacing: -2.2px;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      line-height: 1;
+      margin: 0;
+      user-select: none;
+      text-align: center;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+    }
+
+    /* ─── Onboarding Screen ─── */
+    .onboarding-screen {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 850;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: opacity 350ms var(--ease-out), transform 350ms var(--ease-out), visibility 350ms;
+      visibility: hidden;
+      overflow: hidden;
+    }
+    .onboarding-screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    .onboarding-top-bar {
+      height: 86px;
+      padding: 50px 24px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .onboarding-brand {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      color: var(--label);
+    }
+    .onboarding-brand span {
+      color: var(--tint);
+    }
+    .onboarding-skip-btn {
+      background: none;
+      border: none;
+      color: var(--label-secondary);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 14px;
+      transition: opacity 140ms ease, background 140ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .onboarding-skip-btn:active {
+      opacity: 0.6;
+      background: rgba(120, 120, 128, 0.08);
+    }
+
+    .onboarding-slider-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .onboarding-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 24px 16px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(50px);
+      transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+    }
+    .onboarding-slide.current {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+    .onboarding-slide.passed {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50px);
+    }
+
+    /* Slide Visual Cards (Clean Apple Secondary Gray Fill, NO Image BG) */
+    .onboarding-card-visual {
+      flex: 1;
+      min-height: 280px;
+      max-height: 380px;
+      background: #FFFFFF;
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      padding: 24px;
+    }
+
+    /* Visual 1: Camera Reticle */
+    .onboarding-reticle-box {
+      width: 170px;
+      height: 170px;
+      border: 2px dashed rgba(255, 59, 48, 0.45);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 59, 48, 0.04);
+    }
+    .onboarding-reticle-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--label-secondary);
+    }
+    .red-status-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--tint);
+      box-shadow: 0 0 8px var(--tint);
+      animation: pulseDot 1.4s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    /* Visual 2: Ingredients Breakdown List */
+    .onboarding-tags-cloud {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 290px;
+    }
+    .onboarding-breakdown-row {
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--separator);
+    }
+    .onboarding-breakdown-row span:first-child {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--label);
+    }
+    .onboarding-breakdown-row .breakdown-qty {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tint);
+    }
+    .onboarding-deconstruct-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--label-secondary);
+      margin-top: 16px;
+    }
+
+    /* Visual 3: Cook Mode Step Preview */
+    .onboarding-cook-card {
+      width: 100%;
+      max-width: 290px;
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid var(--separator);
+    }
+    .onboarding-cook-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .onboarding-timer-badge {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--label);
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Onboarding Typography */
+    .onboarding-text-content {
+      padding-top: 4px;
+      margin-bottom: 20px;
+    }
+    .onboarding-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      color: var(--label);
+      text-wrap: balance;
+      margin: 0 0 10px;
+    }
+    .onboarding-desc {
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--label-secondary);
+      text-wrap: pretty;
+      margin: 0;
+    }
+
+    /* Onboarding Bottom Controls */
+    .onboarding-controls {
+      padding: 0 24px 34px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex-shrink: 0;
+    }
+    .onboarding-dots-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .onboarding-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(120, 120, 128, 0.28);
+      transition: width 260ms var(--ease-out), background-color 260ms var(--ease-out);
+      cursor: pointer;
+    }
+    .onboarding-dot.active {
+      width: 26px;
+      background: var(--tint);
+    }
+    .onboarding-action-btn {
+      width: 100%;
+      height: 54px;
+      border-radius: 18px;
+      background: var(--tint-gradient);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 140ms var(--ease-out), opacity 140ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .onboarding-action-btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+    .onboarding-action-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: #ffffff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <!-- ── SPLASH SCREEN (White Wordmark + Primary Color Background) ── -->
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-brand-wrap">
+      <h1 class="splash-logo-title" style="color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;">snaffu</h1>
+    </div>
+  </div>
+
+  <!-- ── ONBOARDING SCREEN (Primary Purpose Walkthrough) ── -->
+  <div class="onboarding-screen" id="onboardingScreen">
+    <!-- Top Bar with Skip -->
+    <header class="onboarding-top-bar">
+      <div class="onboarding-brand">snaf<span>fu</span></div>
+      <button class="onboarding-skip-btn" onclick="skipOnboarding()" aria-label="Skip onboarding">Skip</button>
+    </header>
+
+    <!-- 3 Core Purpose Slides (Clean Apple Gray/White Fill, NO Image BG) -->
+    <div class="onboarding-slider-wrap">
+      <!-- Slide 1: Snap Any Meal -->
+      <div class="onboarding-slide current" id="onboardingSlide0">
+        <div class="onboarding-card-visual" style="background:linear-gradient(160deg,#fff8f7 0%,#fff1ef 100%);padding:0;overflow:hidden;">
+          <!-- Illustrated scene: phone camera pointing at bowl -->
+          <svg viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+            <!-- Background subtle grid -->
+            <defs>
+              <pattern id="ob-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,59,48,0.06)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="320" height="260" fill="url(#ob-grid)"/>
+
+            <!-- Bowl / Dish — main subject -->
+            <!-- Plate shadow -->
+            <ellipse cx="160" cy="196" rx="72" ry="14" fill="rgba(0,0,0,0.07)"/>
+            <!-- Plate -->
+            <ellipse cx="160" cy="182" rx="72" ry="20" fill="#fff" stroke="#f0e8e6" stroke-width="2"/>
+            <ellipse cx="160" cy="180" rx="60" ry="16" fill="#fff7f6"/>
+            <!-- Food in bowl — colorful layers -->
+            <ellipse cx="160" cy="180" rx="48" ry="12" fill="#e8523a" opacity="0.9"/>
+            <ellipse cx="156" cy="178" rx="24" ry="7" fill="#f5c518" opacity="0.85"/>
+            <ellipse cx="164" cy="176" rx="18" ry="6" fill="#4caf50" opacity="0.8"/>
+            <!-- Food texture dots -->
+            <circle cx="152" cy="178" r="2.5" fill="#fff" opacity="0.6"/>
+            <circle cx="168" cy="177" r="2" fill="#fff" opacity="0.5"/>
+            <circle cx="160" cy="174" r="3" fill="#fff" opacity="0.4"/>
+            <!-- Steam lines -->
+            <path d="M148 164 Q145 156 148 148" stroke="#ccc" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+            <path d="M160 161 Q157 151 160 141" stroke="#ccc" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+            <path d="M172 164 Q175 154 172 146" stroke="#ccc" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+            <!-- Phone body pointing at food -->
+            <g transform="translate(52,28) rotate(-8,70,80)">
+              <!-- Phone shadow -->
+              <rect x="4" y="76" width="56" height="102" rx="12" fill="rgba(0,0,0,0.1)" transform="translate(3,4)"/>
+              <!-- Phone body -->
+              <rect x="4" y="76" width="56" height="102" rx="12" fill="#1c1c1e"/>
+              <!-- Screen (camera viewfinder active) -->
+              <rect x="8" y="80" width="48" height="94" rx="8" fill="#2c2c2e"/>
+              <!-- Viewfinder frame on screen -->
+              <rect x="16" y="94" width="32" height="32" rx="4" fill="none" stroke="rgba(255,59,48,0.9)" stroke-width="1.5"/>
+              <!-- Reticle corners -->
+              <path d="M16 102 L16 94 L24 94" stroke="#FF453A" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M40 94 L48 94 L48 102" stroke="#FF453A" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M16 118 L16 126 L24 126" stroke="#FF453A" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M40 126 L48 126 L48 118" stroke="#FF453A" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <!-- Tiny viewfinder content (blurry food preview) -->
+              <ellipse cx="32" cy="110" rx="8" ry="5" fill="rgba(255,69,58,0.3)"/>
+              <ellipse cx="30" cy="109" rx="4" ry="3" fill="rgba(245,197,24,0.4)"/>
+              <!-- Shutter button -->
+              <circle cx="32" cy="155" r="8" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+              <circle cx="32" cy="155" r="5" fill="white" opacity="0.8"/>
+              <!-- Top camera lens -->
+              <circle cx="32" cy="82" r="3.5" fill="#3a3a3c"/>
+              <circle cx="32" cy="82" r="2" fill="#1c1c1e"/>
+              <circle cx="31" cy="81" r="0.7" fill="rgba(255,255,255,0.5)"/>
+            </g>
+
+            <!-- Scan beam line (animated feel via gradient) -->
+            <rect x="82" y="114" width="96" height="2" rx="1" fill="url(#scan-beam)" opacity="0.7"/>
+            <defs>
+              <linearGradient id="scan-beam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(255,69,58,0)"/>
+                <stop offset="40%" stop-color="rgba(255,69,58,0.9)"/>
+                <stop offset="60%" stop-color="rgba(255,69,58,0.9)"/>
+                <stop offset="100%" stop-color="rgba(255,69,58,0)"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Detection badge bottom right -->
+            <rect x="188" y="182" width="118" height="34" rx="10" fill="white" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.12))"/>
+            <circle cx="205" cy="199" r="5" fill="#FF453A"/>
+            <text x="216" y="195" font-family="-apple-system,sans-serif" font-size="9" font-weight="700" fill="#1c1c1e">Dish detected</text>
+            <text x="216" y="208" font-family="-apple-system,sans-serif" font-size="8.5" font-weight="500" fill="rgba(60,60,67,0.65)">Tap to identify</text>
+
+            <!-- Small sparkles around detection point -->
+            <g fill="#FF453A" opacity="0.6">
+              <polygon points="222,158 223.5,162 227.5,162 224.5,164.5 225.5,168.5 222,166 218.5,168.5 219.5,164.5 216.5,162 220.5,162" transform="scale(0.5) translate(220,148)"/>
+            </g>
+            <circle cx="246" cy="148" r="2" fill="#FF453A" opacity="0.4"/>
+            <circle cx="238" cy="156" r="1.5" fill="#FF453A" opacity="0.3"/>
+          </svg>
+        </div>
+
+        <div class="onboarding-text-content">
+          <h2 class="onboarding-title">Snap Any Meal</h2>
+          <p class="onboarding-desc">See a dish you love at a restaurant, on social media, or at home? Point your camera and snap it in a second.</p>
+        </div>
+      </div>
+
+      <!-- Slide 2: Instant Recipe Intelligence -->
+      <div class="onboarding-slide" id="onboardingSlide1">
+        <div class="onboarding-card-visual" style="background:linear-gradient(160deg,#f7f9ff 0%,#f0f4ff 100%);padding:0;overflow:hidden;">
+          <svg viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+            <!-- Background -->
+            <defs>
+              <pattern id="ob-dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+                <circle cx="8" cy="8" r="1" fill="rgba(255,59,48,0.07)"/>
+              </pattern>
+            </defs>
+            <rect width="320" height="260" fill="url(#ob-dots)"/>
+
+            <!-- Floating ingredient cards stack -->
+            <!-- Card 3 (back) -->
+            <rect x="42" y="56" width="236" height="44" rx="14" fill="white" opacity="0.6" stroke="rgba(0,0,0,0.06)" stroke-width="1" transform="rotate(-2,160,78)"/>
+
+            <!-- Card 2 (middle) -->
+            <rect x="38" y="70" width="236" height="44" rx="14" fill="white" opacity="0.85" stroke="rgba(0,0,0,0.07)" stroke-width="1" transform="rotate(1,160,92)"/>
+
+            <!-- Card 1 (front top) — Eggs -->
+            <rect x="36" y="86" width="248" height="48" rx="16" fill="white" filter="drop-shadow(0 4px 16px rgba(0,0,0,0.09))"/>
+            <!-- Ingredient icon -->
+            <circle cx="64" cy="110" r="16" fill="rgba(255,165,0,0.12)"/>
+            <text x="64" y="115" font-family="serif" font-size="18" text-anchor="middle">🥚</text>
+            <text x="90" y="106" font-family="-apple-system,sans-serif" font-size="13" font-weight="600" fill="#1c1c1e">Fresh Farm Eggs</text>
+            <text x="90" y="122" font-family="-apple-system,sans-serif" font-size="11.5" font-weight="500" fill="rgba(60,60,67,0.6)">4 large, room temperature</text>
+            <text x="254" y="115" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" fill="#FF453A" text-anchor="end">4 large</text>
+
+            <!-- Card 2 — Tomatoes -->
+            <rect x="36" y="148" width="248" height="48" rx="16" fill="white" filter="drop-shadow(0 4px 16px rgba(0,0,0,0.07))"/>
+            <circle cx="64" cy="172" r="16" fill="rgba(220,50,47,0.1)"/>
+            <text x="64" y="177" font-family="serif" font-size="18" text-anchor="middle">🍅</text>
+            <text x="90" y="168" font-family="-apple-system,sans-serif" font-size="13" font-weight="600" fill="#1c1c1e">San Marzano Tomatoes</text>
+            <text x="90" y="184" font-family="-apple-system,sans-serif" font-size="11.5" font-weight="500" fill="rgba(60,60,67,0.6)">400g, crushed</text>
+            <text x="254" y="177" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" fill="#FF453A" text-anchor="end">400g</text>
+
+            <!-- Card 3 — Spice -->
+            <rect x="36" y="210" width="248" height="34" rx="16" fill="white" opacity="0.7" filter="drop-shadow(0 2px 8px rgba(0,0,0,0.05))"/>
+            <text x="64" y="232" font-family="serif" font-size="15" text-anchor="middle" opacity="0.5">🌶️</text>
+            <text x="88" y="232" font-family="-apple-system,sans-serif" font-size="12" font-weight="500" fill="rgba(60,60,67,0.5)">Smoked Paprika &amp; Cumin</text>
+            <text x="254" y="232" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" fill="rgba(255,69,58,0.5)" text-anchor="end">1 tsp each</text>
+
+            <!-- AI sparkle indicator top-right -->
+            <rect x="214" y="22" width="90" height="28" rx="10" fill="rgba(255,69,58,0.08)" stroke="rgba(255,69,58,0.15)" stroke-width="1"/>
+            <text x="224" y="40" font-family="serif" font-size="12">✨</text>
+            <text x="240" y="40" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" fill="#FF453A">AI Powered</text>
+
+            <!-- Speed tag -->
+            <rect x="16" y="22" width="84" height="28" rx="10" fill="rgba(52,199,89,0.1)" stroke="rgba(52,199,89,0.2)" stroke-width="1"/>
+            <circle cx="31" cy="36" r="5" fill="rgba(52,199,89,0.9)"/>
+            <text x="41" y="40" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" fill="#1c8c3a">In 1.2s</text>
+          </svg>
+        </div>
+
+        <div class="onboarding-text-content">
+          <h2 class="onboarding-title">Get Instant Recipes</h2>
+          <p class="onboarding-desc">Snaffu deconstructs every dish into exact measured ingredients, secret seasonings, and estimated prep times.</p>
+        </div>
+      </div>
+
+      <!-- Slide 3: Cook Step-by-Step -->
+      <div class="onboarding-slide" id="onboardingSlide2">
+        <div class="onboarding-card-visual" style="background:linear-gradient(160deg,#f7fff8 0%,#f0fff2 100%);padding:0;overflow:hidden;">
+          <svg viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+            <!-- Subtle BG -->
+            <defs>
+              <pattern id="ob-lines" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(52,199,89,0.06)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="320" height="260" fill="url(#ob-lines)"/>
+
+            <!-- Top: Progress bar -->
+            <rect x="24" y="28" width="272" height="6" rx="3" fill="rgba(0,0,0,0.07)"/>
+            <rect x="24" y="28" width="109" height="6" rx="3" fill="rgba(52,199,89,0.85)"/>
+            <!-- Step indicators -->
+            <circle cx="24" cy="31" r="5" fill="#34C759"/>
+            <circle cx="133" cy="31" r="5" fill="#34C759"/>
+            <text x="162" y="24" font-family="-apple-system,sans-serif" font-size="10" font-weight="600" fill="rgba(60,60,67,0.45)">STEP 2 OF 5</text>
+            <circle cx="296" cy="31" r="5" fill="rgba(0,0,0,0.1)"/>
+
+            <!-- Main cook card -->
+            <rect x="20" y="52" width="280" height="138" rx="20" fill="white" filter="drop-shadow(0 6px 24px rgba(0,0,0,0.08))"/>
+
+            <!-- Timer badge top-right of card -->
+            <rect x="214" y="66" width="74" height="28" rx="10" fill="rgba(255,69,58,0.08)" stroke="rgba(255,69,58,0.12)" stroke-width="1"/>
+            <path d="M224 75 a6 6 0 0 1 12 0 a6 6 0 0 1 -12 0 M230 71 L230 75 L233 78" stroke="#FF453A" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            <text x="243" y="83" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" fill="#FF453A" font-variant-numeric="tabular-nums">08:45</text>
+
+            <!-- Step text heading -->
+            <text x="38" y="80" font-family="-apple-system,sans-serif" font-size="11" font-weight="700" fill="rgba(60,60,67,0.5)" letter-spacing="0.5">STEP 2 OF 5</text>
+
+            <!-- Cook instruction -->
+            <foreignObject x="34" y="90" width="252" height="60">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:-apple-system,sans-serif;font-size:15px;font-weight:600;color:#1c1c1e;line-height:1.4;">Simmer tomatoes on medium heat until fragrant and slightly reduced.</div>
+            </foreignObject>
+
+            <!-- Tip row -->
+            <rect x="34" y="158" width="252" height="24" rx="8" fill="rgba(52,199,89,0.08)"/>
+            <path d="M44 163 L44 175 M50 163 L50 175" stroke="rgba(52,199,89,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="58" y="175" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" fill="rgba(52,199,89,0.9)">Medium-high heat · Olive oil &amp; sea salt</text>
+
+            <!-- Bottom action row: prev / timer play / next -->
+            <rect x="20" y="202" width="280" height="46" rx="16" fill="white" filter="drop-shadow(0 2px 8px rgba(0,0,0,0.05))"/>
+            <!-- Prev btn -->
+            <polyline points="52,221 46,225 52,229" stroke="rgba(60,60,67,0.35)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Divider -->
+            <line x1="72" y1="210" x2="72" y2="240" stroke="rgba(60,60,67,0.08)" stroke-width="1"/>
+            <!-- Timer button (center) -->
+            <circle cx="160" cy="225" r="16" fill="rgba(255,69,58,0.08)"/>
+            <polygon points="156,218 156,232 170,225" fill="#FF453A" opacity="0.85"/>
+            <text x="160" y="244" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" fill="rgba(60,60,67,0.5)" text-anchor="middle">Step Timer</text>
+            <!-- Divider -->
+            <line x1="248" y1="210" x2="248" y2="240" stroke="rgba(60,60,67,0.08)" stroke-width="1"/>
+            <!-- Next btn -->
+            <polyline points="258,221 264,225 258,229" stroke="#1c1c1e" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="264" y="248" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" fill="rgba(60,60,67,0.5)" text-anchor="end">Next</text>
+            <text x="52" y="248" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" fill="rgba(60,60,67,0.5)">Prev</text>
+          </svg>
+        </div>
+
+        <div class="onboarding-text-content">
+          <h2 class="onboarding-title">Cook with Precision</h2>
+          <p class="onboarding-desc">Follow hands-free, distraction-free guided steps with built-in timers calibrated specifically for each step.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Dots & Action Button -->
+    <div class="onboarding-controls">
+      <div class="onboarding-dots-row">
+        <div class="onboarding-dot active" onclick="goToOnboardingSlide(0)"></div>
+        <div class="onboarding-dot" onclick="goToOnboardingSlide(1)"></div>
+        <div class="onboarding-dot" onclick="goToOnboardingSlide(2)"></div>
+      </div>
+
+      <button class="onboarding-action-btn" id="onboardingActionBtn" onclick="nextOnboardingSlide()">
+        <span id="onboardingBtnLabel">Continue</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Glass Navigation -->
+  <header class="top-glass-nav">
+    <div class="app-logo">snaf<span>fu</span></div>
+  </header>
+
+  <!-- ── TAB 1: HOME (SNAP & INSPIRATION) ── -->
+  <main class="scroll-pane active" id="tab-home">
+    <section class="greeting-header">
+      <div class="greeting-eyebrow" id="timeGreeting">Good afternoon, Chef</div>
+      <div class="greeting-title-row">
+        <h1 class="greeting-title">What should we cook today?</h1>
+        <button class="nav-profile-btn" onclick="openProfileModal()" aria-label="Profile and Settings">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Profile" />
+        </button>
+      </div>
+    </section>
+
+    <!-- Carousel: 4 Inspiration Meal Options to Start With -->
+    <section class="carousel-section">
+      <div class="section-headline">
+        <h2 class="section-title">Start with These</h2>
+      </div>
+
+      <div class="carousel-track" id="inspirationTrack"></div>
+    </section>
+
+    <!-- Recent Snaps Archive preview -->
+    <section>
+      <div class="section-headline">
+        <h2 class="section-title">Your Recent Snaps</h2>
+      </div>
+
+      <div class="snaps-vertical-list" id="homeSnapsList"></div>
+    </section>
+  </main>
+
+  <!-- ── TAB 2: MY SNAPS (HISTORY & FILTERS) ── -->
+  <main class="scroll-pane" id="tab-history">
+    <div class="glass-search-box">
+      <!-- Hugeicons Search Icon -->
+      <svg class="huge-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>
+      <input type="text" id="searchInput" placeholder="Search meal, dish or ingredient..." />
+    </div>
+
+    <!-- Meal Type Filters -->
+    <div class="chip-scroll" id="filterChips"></div>
+
+    <div class="snaps-vertical-list" id="allSnapsList"></div>
+  </main>
+
+  <!-- ── TAB 3: SAVED RECIPES ── -->
+  <main class="scroll-pane" id="tab-saved">
+    <div style="font-size:13px;color:var(--label-secondary);margin-bottom:14px;font-weight:500;" id="savedSubhead">2 pinned recipes</div>
+    <div class="snaps-vertical-list" id="savedList"></div>
+  </main>
+
+  <!-- ── FLOATING APPLE MUSIC NAV BAR: 3 TABS + SNAP CIRCLE (Hugeicons) ── -->
+  <div class="floating-music-bar-container">
+    <!-- Main Island Dock -->
+    <nav class="floating-tab-island">
+      <!-- 1. Home (Hugeicons Home) -->
+      <button class="island-tab active" onclick="switchTab('home', this)">
+        <svg class="huge-icon" viewBox="0 0 24 24">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H4a1 1 0 0 1-1-1V9.5z"/>
+        </svg>
+        <span class="island-tab-label">Home</span>
+      </button>
+
+      <!-- 2. My Snaps (Hugeicons 4-Square Grid) -->
+      <button class="island-tab" onclick="switchTab('history', this)">
+        <svg class="huge-icon" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/>
+        </svg>
+        <span class="island-tab-label">My Snaps</span>
+      </button>
+
+      <!-- 3. Saved (Hugeicons Ribbon Bookmark) -->
+      <button class="island-tab" onclick="switchTab('saved', this)">
+        <svg class="huge-icon" viewBox="0 0 24 24">
+          <path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4.5L4 21V4a1 1 0 0 1 1-1z"/>
+        </svg>
+        <span class="island-tab-label">Saved</span>
+      </button>
+    </nav>
+
+    <!-- Disconnected Floating Circular Button in Primary Color (Snap Meal - Hugeicons Camera) -->
+    <button class="floating-snap-circle" id="floatingSnapCircle" onclick="openCameraView()" aria-label="Snap meal">
+      <svg viewBox="0 0 24 24">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Recipe Sheet Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-sheet" id="modalSheet">
+      <div class="sheet-handle"></div>
+
+      <!-- Detail Hero Card with Photo -->
+      <div class="detail-hero-card">
+        <img src="" id="detailImage" class="detail-hero-img" alt="Meal photo" />
+        <div class="detail-hero-content">
+          <div class="detail-top-row">
+            <span class="meal-type-tag" id="sheetMealType">BREAKFAST</span>
+            <button class="bookmark-action-btn" id="bookmarkBtn" onclick="toggleSaveCurrent()">
+              <!-- Hugeicons Bookmark -->
+              <svg viewBox="0 0 24 24"><path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4.5L4 21V4a1 1 0 0 1 1-1z"/></svg>
+            </button>
+          </div>
+          <h2 class="detail-title" id="sheetTitle">Shakshuka</h2>
+          <div class="detail-meta-row" id="sheetMeta">
+            <span class="detail-meta-item">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+              <span>25 min</span>
+            </span>
+            <span class="detail-meta-dot">·</span>
+            <span class="detail-meta-item">
+              <svg viewBox="0 0 24 24"><path d="M12 2c.5 2.5 2 4 3.5 6 1.5 2 2.5 4 2.5 6.5a6 6 0 1 1-12 0c0-3.5 2-6.5 4-8.5 0 2 1 3 2 3 1 0 1.5-1 1.5-2.5 0-1.5-.5-3-1.5-4.5z"/></svg>
+              <span>Easy</span>
+            </span>
+            <span class="detail-meta-dot">·</span>
+            <span class="detail-meta-item">
+              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>2 servings</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Servings Adjuster -->
+      <div style="background:var(--bg-card);border-radius:18px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04);">
+        <div>
+          <div style="font-weight:600;font-size:15px;color:var(--label);">Adjust Servings</div>
+          <div style="font-size:12px;color:var(--label-secondary);">Ingredient amounts scale dynamically</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button style="width:32px;height:32px;border-radius:50%;border:none;background:var(--tint-subtle);color:var(--tint);font-size:18px;font-weight:600;cursor:pointer;" id="btnMinus">−</button>
+          <span style="font-weight:600;font-size:16px;min-width:20px;text-align:center;" id="servingsVal">2</span>
+          <button style="width:32px;height:32px;border-radius:50%;border:none;background:var(--tint-subtle);color:var(--tint);font-size:18px;font-weight:600;cursor:pointer;" id="btnPlus">+</button>
+        </div>
+      </div>
+
+      <!-- Ingredients -->
+      <div class="content-box">
+        <div class="content-box-title">Ingredients</div>
+        <div id="ingredientsContainer"></div>
+      </div>
+
+      <!-- Steps -->
+      <div class="content-box">
+        <div class="content-box-title">Preparation &amp; Cooking</div>
+        <div id="stepsContainer"></div>
+      </div>
+
+      <!-- Start Cooking Button (Moved to bottom) -->
+      <button class="cook-gradient-btn" onclick="startCookMode()" style="margin-top:8px;margin-bottom:28px;">
+        <!-- Hugeicons Play -->
+        <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polygon points="6 4 19 12 6 20 6 4"/></svg>
+        Start Cooking
+      </button>
+    </div>
+  </div>
+
+  <!-- Fullscreen Cook Mode -->
+  <div class="cook-mode-overlay" id="cookModeOverlay">
+    <div class="cook-top-bar">
+      <button class="cook-close-circle" onclick="closeCookMode()">
+        <!-- Hugeicons Cancel / Close -->
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div style="text-align:center;">
+        <div id="cookMealTitle" style="font-size:15px;font-weight:600;">Shakshuka</div>
+        <div id="cookStepSub" style="font-size:12px;color:var(--label-secondary);font-weight:500;">Step 1 of 3</div>
+      </div>
+      <div style="width:38px;"></div>
+    </div>
+
+    <div class="cook-progress-track">
+      <div class="cook-progress-fill" id="cookProgressFill"></div>
+    </div>
+
+    <div class="cook-main-card">
+      <div>
+        <span class="cook-step-pill" id="cookStepBadge">STEP 1</span>
+        <div class="cook-step-text" id="cookInstructionText">Sauté diced peppers and garlic in olive oil until tender and aromatic.</div>
+      </div>
+
+      <div class="cook-timer-panel">
+        <div>
+          <div class="cook-timer-big" id="cookTimerDisplay">05:00</div>
+          <div style="font-size:11px;color:var(--label-secondary);font-weight:500;" id="cookTimerLabel">Step Timer</div>
+        </div>
+        <button class="timer-toggle-btn" id="cookTimerBtn" onclick="toggleCookTimer()">
+          <svg viewBox="0 0 24 24" id="timerIconPlay"><polygon points="6 4 19 12 6 20 6 4"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="cook-bottom-actions">
+      <button class="cook-arrow-btn" id="cookPrevBtn" onclick="prevCookStep()">
+        <!-- Hugeicons Arrow Left -->
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <button class="cook-advance-btn" id="cookNextBtn" onclick="nextCookStep()">
+        <span id="cookNextLabel">Next Step</span>
+        <!-- Hugeicons Arrow Right -->
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LIVE CAMERA VIEWFINDER OVERLAY ── -->
+  <div class="camera-overlay" id="cameraOverlay">
+    <div class="camera-top-bar">
+      <button class="cam-btn" onclick="closeCameraView()" aria-label="Close camera">
+        <!-- Hugeicons Cancel / Close -->
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="camera-title">Snap Meal</div>
+      <button class="cam-btn" id="camFlashBtn" onclick="toggleFlash()" aria-label="Toggle Flash">
+        <!-- Hugeicons Flash -->
+        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </button>
+    </div>
+
+    <div class="camera-viewport-wrap">
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <canvas id="cameraCanvas" style="display:none;"></canvas>
+
+      <!-- Viewfinder Framing Reticle -->
+      <div class="camera-reticle">
+        <div class="reticle-corner tl"></div>
+        <div class="reticle-corner tr"></div>
+        <div class="reticle-corner bl"></div>
+        <div class="reticle-corner br"></div>
+        <div class="reticle-hint">Point camera at meal to detect recipe</div>
+      </div>
+
+      <!-- Permission Needed / Fallback Dialog -->
+      <div class="camera-permission-fallback" id="cameraFallback">
+        <div class="fallback-icon">
+          <!-- Hugeicons Camera Disabled -->
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </div>
+        <div class="fallback-title">Camera Permission Needed</div>
+        <div class="fallback-desc">Snaffu uses camera access to identify dishes and generate recipe steps. Click 'Allow' in Chrome or select a photo from your library.</div>
+        <div style="display:flex;gap:10px;">
+          <button class="fallback-action-btn" onclick="requestRealCamera()">Allow Camera</button>
+          <label class="fallback-action-btn secondary" for="photoFileInput" style="cursor:pointer;">Choose Photo</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file picker for album fallback -->
+    <input type="file" id="photoFileInput" accept="image/*" style="display:none;" onchange="handleFileSelected(event)" />
+
+    <!-- Bottom Controls -->
+    <div class="camera-bottom-bar">
+      <!-- Gallery / Photo Library Picker -->
+      <label class="cam-album-btn" for="photoFileInput" aria-label="Choose photo from library" style="cursor:pointer;">
+        <!-- Hugeicons Image -->
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </label>
+
+      <!-- Capture Shutter Button -->
+      <button class="cam-shutter-btn" id="shutterBtn" onclick="captureLivePhoto()" aria-label="Take snap">
+        <div class="shutter-inner"></div>
+      </button>
+
+      <!-- Flip Camera -->
+      <button class="cam-flip-btn" onclick="flipCamera()" aria-label="Flip camera">
+        <!-- Hugeicons Flip / Refresh -->
+        <svg viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-5v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 5v-5h-5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Simulated AI Scanning -->
+  <div class="scan-overlay" id="scanOverlay">
+    <div class="spinner-ring"></div>
+    <div style="color:#fff;font-weight:600;font-size:17px;letter-spacing:-0.2px;">Identifying meal &amp; ingredients…</div>
+    <div style="color:rgba(255,255,255,.5);font-size:13px;">Analyzing food photo with vision engine</div>
+  </div>
+
+  <!-- Profile Full Page Screen (Replacing bottom slider modal) -->
+  <div class="profile-page-screen" id="profilePageScreen">
+    <!-- Top Navigation Bar with Back Button -->
+    <header class="profile-page-nav">
+      <button class="profile-back-btn" onclick="closeProfilePage()" aria-label="Back to home">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Back</span>
+      </button>
+      <div class="profile-page-title">Profile</div>
+      <div style="width:54px;"></div>
+    </header>
+
+    <div class="profile-page-content">
+      <!-- Hidden file input for avatar upload -->
+      <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(event)" />
+
+      <!-- User Information Card with Editable Avatar & Clean Typography + Edit CTA -->
+      <div class="profile-user-card">
+        <div class="avatar-edit-wrapper" onclick="document.getElementById('avatarFileInput').click()" title="Tap to change photo">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" id="profileAvatarImg" alt="Avatar" />
+          <div class="avatar-edit-badge" title="Change photo">
+            <!-- Hugeicons Camera -->
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+        <div class="profile-user-info">
+          <div class="profile-user-name" id="displayProfileName">Chef Guest</div>
+          <div class="profile-user-bio" id="displayProfileBio">Home Cook · Snaffu Member</div>
+        </div>
+        <!-- Functional Edit CTA -->
+        <button class="profile-edit-btn" onclick="openEditProfileSlider()" aria-label="Edit Name and Bio">
+          <!-- Hugeicons Edit / Pencil -->
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+      </div>
+
+      <!-- Activity Stats (Figures in Black) -->
+      <div style="background:var(--bg-card);border-radius:18px;padding:16px;display:flex;justify-content:space-around;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+        <div style="text-align:center;">
+          <div style="font-size:24px;font-weight:600;color:#000000;" id="statSnaps">5</div>
+          <div style="font-size:12px;color:var(--label-secondary);margin-top:2px;font-weight:500;">Meals Snapped</div>
+        </div>
+        <div style="width:1px;background:var(--separator)"></div>
+        <div style="text-align:center;">
+          <div style="font-size:24px;font-weight:600;color:#000000;" id="statSaved">2</div>
+          <div style="font-size:12px;color:var(--label-secondary);margin-top:2px;font-weight:500;">Saved Recipes</div>
+        </div>
+      </div>
+
+      <!-- Cooking Preferences -->
+      <div class="profile-section-heading">Preferences</div>
+      <div style="background:var(--bg-card);border-radius:18px;overflow:hidden;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+        <!-- Dietary Preference Selection -->
+        <div class="profile-setting-row">
+          <span>Dietary Preference</span>
+          <select id="dietaryPrefSelect" class="ios-select" onchange="updateDietaryPref(this.value)">
+            <option value="all" selected>None / All</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="gluten-free">Gluten-Free</option>
+            <option value="dairy-free">Dairy-Free</option>
+            <option value="pescatarian">Pescatarian</option>
+            <option value="keto">Keto</option>
+          </select>
+        </div>
+
+        <!-- Measurement Units Selection -->
+        <div class="profile-setting-row">
+          <span>Units</span>
+          <select id="unitsSelect" class="ios-select" onchange="updateUnits(this.value)">
+            <option value="metric" selected>Metric (g, ml)</option>
+            <option value="imperial">Imperial (oz, cups)</option>
+            <option value="us">US Customary</option>
+          </select>
+        </div>
+
+        <!-- Push Notifications Toggle -->
+        <div class="profile-setting-row">
+          <span>Push Notifications</span>
+          <label class="ios-switch" aria-label="Toggle Push Notifications">
+            <input type="checkbox" id="pushNotificationsToggle" checked onchange="togglePushNotifications(this.checked)" />
+            <span class="ios-switch-slider"></span>
+          </label>
+        </div>
+
+        <!-- Haptics Toggle Switch -->
+        <div class="profile-setting-row">
+          <span>Haptics on Snap</span>
+          <label class="ios-switch" aria-label="Toggle Haptics">
+            <input type="checkbox" id="hapticsToggle" checked onchange="toggleHaptics(this.checked)" />
+            <span class="ios-switch-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Support & About Section -->
+      <div class="profile-section-heading">Support &amp; About</div>
+      <div style="background:var(--bg-card);border-radius:18px;overflow:hidden;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+        <!-- Contact / Support -->
+        <div class="profile-setting-row clickable" onclick="contactSupport()">
+          <span>Contact &amp; Support</span>
+          <div style="display:flex;align-items:center;gap:6px;color:var(--label-secondary);">
+            <span style="font-size:13px;font-weight:500;">support@snaffu.app</span>
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--label-tertiary);stroke-width:2;fill:none;"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        <!-- Recognition Engine -->
+        <div class="profile-setting-row non-clickable">
+          <span>Recognition Engine</span>
+          <span style="color:var(--green);font-weight:600;font-size:14px;">Local Recipe Engine</span>
+        </div>
+
+        <!-- App Version (Non-clickable) -->
+        <div class="profile-setting-row non-clickable">
+          <span>App Version</span>
+          <span style="color:var(--label-secondary);font-weight:500;font-size:13px;font-variant-numeric:tabular-nums;">Snaffu 1.0.0 (v1 Offline)</span>
+        </div>
+      </div>
+
+      <!-- Account Actions Section -->
+      <div class="profile-section-heading">Account</div>
+      <div style="background:var(--bg-card);border-radius:18px;overflow:hidden;margin-bottom:30px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+
+        <!-- Log Out -->
+        <div class="profile-setting-row clickable" onclick="handleLogOut()">
+          <span style="color:var(--tint);font-weight:600;">Log Out</span>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--tint);stroke-width:2;fill:none;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </div>
+
+        <!-- Delete Account -->
+        <div class="profile-setting-row clickable" onclick="handleDeleteAccount()">
+          <span style="color:#FF3B30;font-weight:600;">Delete Account</span>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#FF3B30;stroke-width:2;fill:none;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EDIT PROFILE SLIDER MODAL ── -->
+  <div class="edit-profile-overlay" id="editProfileOverlay" onclick="closeEditProfileSlider(event)">
+    <div class="edit-profile-sheet" id="editProfileSheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="edit-sheet-top-row">
+        <h3 class="edit-sheet-title">Edit Profile</h3>
+        <button class="edit-sheet-close-btn" onclick="closeEditProfileSlider()" aria-label="Close edit profile">
+          <!-- Hugeicons Cancel / Close -->
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="edit-field-group">
+        <label class="edit-field-label" for="editNameInput">Name</label>
+        <input type="text" id="editNameInput" class="edit-field-input" placeholder="e.g. Chef Alex" maxlength="35" />
+      </div>
+
+      <div class="edit-field-group">
+        <label class="edit-field-label" for="editBioInput">Bio / Status</label>
+        <textarea id="editBioInput" class="edit-field-textarea" placeholder="e.g. Food enthusiast & home baker" rows="3" maxlength="100"></textarea>
+      </div>
+
+      <button class="save-changes-btn" onclick="saveProfileChanges()">
+        <span>Save Changes</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const catalog = [
+    {
+      id: 'shakshuka',
+      name: 'Mediterranean Shakshuka',
+      mealType: 'Breakfast',
+      image: 'https://images.unsplash.com/photo-1590412200988-a436970781fa?auto=format&fit=crop&w=600&q=80',
+      time: 25,
+      difficulty: 'Easy',
+      baseServings: 2,
+      ingredients: [
+        { name: 'Fresh Farm Eggs', amount: 4, unit: 'large' },
+        { name: 'San Marzano Tomatoes', amount: 400, unit: 'g' },
+        { name: 'Red Bell Pepper', amount: 1, unit: 'diced' },
+        { name: 'Garlic & Cumin', amount: 3, unit: 'cloves' },
+        { name: 'Crumbled Feta', amount: 50, unit: 'g' }
+      ],
+      steps: [
+        { text: 'Sauté diced bell peppers and garlic in extra virgin olive oil until tender and sweet.', mins: 5 },
+        { text: 'Pour in crushed tomatoes and toasted cumin; simmer on medium-low until thick and glossy.', mins: 10 },
+        { text: 'Make four gentle wells, crack eggs in, cover skillet and cook until whites set while yolks stay runny.', mins: 5 }
+      ]
+    },
+    {
+      id: 'padthai',
+      name: 'Bangkok Street Pad Thai',
+      mealType: 'Lunch',
+      image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80',
+      time: 20,
+      difficulty: 'Medium',
+      baseServings: 2,
+      ingredients: [
+        { name: 'Rice Noodles', amount: 200, unit: 'g' },
+        { name: 'Tiger Prawns or Tofu', amount: 180, unit: 'g' },
+        { name: 'Tamarind Pulp Paste', amount: 3, unit: 'tbsp' },
+        { name: 'Fish Sauce & Palm Sugar', amount: 2, unit: 'tbsp' },
+        { name: 'Roasted Crushed Peanuts', amount: 40, unit: 'g' }
+      ],
+      steps: [
+        { text: 'Soak rice noodles in warm water for 25 minutes until pliable, then drain thoroughly.', mins: 25 },
+        { text: 'In a smoking hot wok with peanut oil, quickly sear prawns and scramble eggs until tender.', mins: 3 },
+        { text: 'Toss in noodles and tamarind reduction, folding continuously on high heat until absorbed and caramelized.', mins: 4 }
+      ]
+    },
+    {
+      id: 'carbonara',
+      name: 'Roman Spaghetti Carbonara',
+      mealType: 'Dinner',
+      image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80',
+      time: 25,
+      difficulty: 'Medium',
+      baseServings: 2,
+      ingredients: [
+        { name: 'Bronze-Cut Spaghetti', amount: 200, unit: 'g' },
+        { name: 'Cured Guanciale', amount: 150, unit: 'g' },
+        { name: 'Fresh Egg Yolks', amount: 4, unit: 'large' },
+        { name: 'Pecorino Romano DOP', amount: 80, unit: 'g' },
+        { name: 'Freshly Cracked Black Pepper', amount: 1, unit: 'tbsp' }
+      ],
+      steps: [
+        { text: 'Boil spaghetti in well-salted water 2 minutes shy of box timing for authentic al dente.', mins: 8 },
+        { text: 'Slowly render guanciale in cold pan over medium-low heat until golden and crispy outside, chewy within.', mins: 7 },
+        { text: 'Whisk egg yolks and grated Pecorino into a paste; toss off-heat with pasta and hot starchy water to emulsify.', mins: 2 }
+      ]
+    },
+    {
+      id: 'parfait',
+      name: 'Wild Berry Chia Parfait',
+      mealType: 'Dessert',
+      image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
+      time: 10,
+      difficulty: 'Easy',
+      baseServings: 2,
+      ingredients: [
+        { name: 'Black Chia Seeds', amount: 4, unit: 'tbsp' },
+        { name: 'Almond Milk', amount: 250, unit: 'ml' },
+        { name: 'Vanilla Greek Yogurt', amount: 150, unit: 'g' },
+        { name: 'Fresh Raspberries & Honey', amount: 100, unit: 'g' }
+      ],
+      steps: [
+        { text: 'Whisk chia seeds with almond milk and a touch of vanilla; refrigerate 20 minutes to set.', mins: 20 },
+        { text: 'Layer Greek yogurt and chia pudding in chilled glass tumblers.', mins: 3 },
+        { text: 'Top with fresh blackberries, raspberries, mint leaves, and a drizzle of wildflower honey.', mins: 2 }
+      ]
+    },
+    {
+      id: 'springrolls',
+      name: 'Crispy Veggie Spring Rolls',
+      mealType: 'Appetizer',
+      image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
+      time: 30,
+      difficulty: 'Medium',
+      baseServings: 4,
+      ingredients: [
+        { name: 'Spring Roll Wrappers', amount: 12, unit: 'sheets' },
+        { name: 'Shredded Cabbage & Carrots', amount: 200, unit: 'g' },
+        { name: 'Shiitake Mushrooms', amount: 60, unit: 'g' },
+        { name: 'Sweet Chili Dipping Sauce', amount: 4, unit: 'tbsp' }
+      ],
+      steps: [
+        { text: 'Flash stir-fry cabbage, carrots, and shiitake mushrooms with toasted sesame oil until fragrant.', mins: 5 },
+        { text: 'Wrap filling tightly in delicate pastry sheets, brushing edges with cornstarch slurry to seal.', mins: 10 },
+        { text: 'Deep fry in oil at 180°C (350°F) for 4 minutes until golden, crunchy, and drained on wire rack.', mins: 4 }
+      ]
+    }
+  ];
+
+  let savedIds = ['shakshuka', 'carbonara'];
+  let currentRecipe = catalog[0];
+  let servingMultiplier = 1.0;
+  let activeFilter = 'All';
+
+  let cookStepIndex = 0;
+  let timerInterval = null;
+  let timerRemainingSeconds = 0;
+  let isTimerRunning = false;
+
+  function updateTimeGreeting() {
+    const hour = new Date().getHours();
+    let greeting = 'Good morning, Chef';
+    if (hour >= 12 && hour < 17) greeting = 'Good afternoon, Chef';
+    else if (hour >= 17) greeting = 'Good evening, Chef';
+    document.getElementById('timeGreeting').textContent = greeting;
+  }
+  updateTimeGreeting();
+
+  // Tab switching
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.scroll-pane').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.island-tab').forEach(b => b.classList.remove('active'));
+
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  function openProfilePage() {
+    document.getElementById('profilePageScreen').classList.add('open');
+  }
+
+  function closeProfilePage() {
+    document.getElementById('profilePageScreen').classList.remove('open');
+  }
+
+  function openProfileModal() {
+    openProfilePage();
+  }
+
+  function closeProfileModal() {
+    closeProfilePage();
+  }
+
+  // Render Carousel: 4 Inspiration Meals to Start With
+  function renderInspirationCarousel() {
+    const carouselItems = catalog.slice(0, 4);
+    document.getElementById('inspirationTrack').innerHTML = carouselItems.map(item => `
+      <div class="carousel-card" onclick="openRecipe('${item.id}')">
+        <div class="carousel-card-img-wrap">
+          <img src="${item.image}" class="carousel-card-img" alt="${item.name}" loading="lazy" />
+          <div class="carousel-meal-badge">${item.mealType}</div>
+        </div>
+        <div class="carousel-card-body">
+          <div class="carousel-card-title">${item.name}</div>
+          <div class="carousel-card-meta">
+            <!-- Hugeicons Clock -->
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+            <span>${item.time} min</span>
+            <span>·</span>
+            <span>${item.difficulty}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Render Recent Snaps in Home
+  function renderHomeSnaps() {
+    document.getElementById('homeSnapsList').innerHTML = catalog.map(r => `
+      <div class="snap-card-row" onclick="openRecipe('${r.id}')">
+        <div class="snap-thumb-wrap">
+          <img src="${r.image}" class="snap-thumb-img" alt="${r.name}" />
+        </div>
+        <div class="snap-info">
+          <div class="snap-title-text">${r.name}</div>
+          <div class="snap-tags-row">
+            <span class="meal-type-tag">${r.mealType}</span>
+            <span>${r.time} min</span>
+            <span>·</span>
+            <span>${r.ingredients.length} ingredients</span>
+          </div>
+        </div>
+        <!-- Hugeicons Chevron Right -->
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--label-tertiary);stroke-width:2;fill:none;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    `).join('');
+  }
+
+  // Render All Snaps with MealType filters
+  function renderAllSnaps() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = catalog.filter(r => {
+      const matchQ = r.name.toLowerCase().includes(q) || r.mealType.toLowerCase().includes(q);
+      const matchF = activeFilter === 'All' || r.mealType === activeFilter;
+      return matchQ && matchF;
+    });
+
+    document.getElementById('allSnapsList').innerHTML = filtered.map(r => `
+      <div class="snap-card-row" onclick="openRecipe('${r.id}')">
+        <div class="snap-thumb-wrap">
+          <img src="${r.image}" class="snap-thumb-img" alt="${r.name}" />
+        </div>
+        <div class="snap-info">
+          <div class="snap-title-text">${r.name}</div>
+          <div class="snap-tags-row">
+            <span class="meal-type-tag">${r.mealType}</span>
+            <span>${r.time} min</span>
+            <span>·</span>
+            <span>${r.difficulty}</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--label-tertiary);stroke-width:2;fill:none;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('searchInput').addEventListener('input', renderAllSnaps);
+
+  const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Appetizer'];
+
+  function renderFilterChips() {
+    const totalCount = catalog.length;
+    let html = `<div class="type-chip ${activeFilter === 'All' ? 'active' : ''}" onclick="setFilter('All')">All (${totalCount})</div>`;
+    mealTypes.forEach(type => {
+      const count = catalog.filter(r => r.mealType === type).length;
+      html += `<div class="type-chip ${activeFilter === type ? 'active' : ''}" onclick="setFilter('${type}')">${type} (${count})</div>`;
+    });
+    document.getElementById('filterChips').innerHTML = html;
+  }
+
+  function setFilter(mealType) {
+    activeFilter = mealType;
+    renderFilterChips();
+    renderAllSnaps();
+  }
+
+  // Render Saved Recipes
+  function renderSaved() {
+    const saved = catalog.filter(r => savedIds.includes(r.id));
+    document.getElementById('savedSubhead').textContent = `${saved.length} pinned recipes`;
+    document.getElementById('statSaved').textContent = saved.length;
+
+    document.getElementById('savedList').innerHTML = saved.map(r => `
+      <div class="snap-card-row" onclick="openRecipe('${r.id}')">
+        <div class="snap-thumb-wrap">
+          <img src="${r.image}" class="snap-thumb-img" alt="${r.name}" />
+        </div>
+        <div class="snap-info">
+          <div class="snap-title-text">${r.name}</div>
+          <div class="snap-tags-row">
+            <span class="meal-type-tag">${r.mealType}</span>
+            <span>${r.time} min</span>
+          </div>
+        </div>
+        <!-- Hugeicons Ribbon Bookmark -->
+        <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--tint);stroke-width:1.8;fill:var(--tint);"><path d="M5 3h14a1 1 0 0 1 1 1v17l-8-4.5L4 21V4a1 1 0 0 1 1-1z"/></svg>
+      </div>
+    `).join('');
+  }
+
+  // Open Recipe Modal
+  function openRecipe(id) {
+    currentRecipe = catalog.find(c => c.id === id) || catalog[0];
+    servingMultiplier = 1.0;
+    renderRecipeModal();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function renderRecipeModal() {
+    document.getElementById('detailImage').src = currentRecipe.image;
+    document.getElementById('sheetMealType').textContent = currentRecipe.mealType.toUpperCase();
+    document.getElementById('sheetTitle').textContent = currentRecipe.name;
+    const currentServings = Math.round(currentRecipe.baseServings * servingMultiplier);
+    document.getElementById('sheetMeta').innerHTML = `
+      <span class="detail-meta-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+        <span>${currentRecipe.time} min</span>
+      </span>
+      <span class="detail-meta-dot">·</span>
+      <span class="detail-meta-item">
+        <svg viewBox="0 0 24 24"><path d="M12 2c.5 2.5 2 4 3.5 6 1.5 2 2.5 4 2.5 6.5a6 6 0 1 1-12 0c0-3.5 2-6.5 4-8.5 0 2 1 3 2 3 1 0 1.5-1 1.5-2.5 0-1.5-.5-3-1.5-4.5z"/></svg>
+        <span>${currentRecipe.difficulty}</span>
+      </span>
+      <span class="detail-meta-dot">·</span>
+      <span class="detail-meta-item">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>${currentServings} servings</span>
+      </span>
+    `;
+    document.getElementById('servingsVal').textContent = currentServings;
+
+    const isSaved = savedIds.includes(currentRecipe.id);
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
+    if (isSaved) bookmarkBtn.classList.add('saved');
+    else bookmarkBtn.classList.remove('saved');
+
+    // Ingredients
+    document.getElementById('ingredientsContainer').innerHTML = currentRecipe.ingredients.map(ing => {
+      const scaled = (ing.amount * servingMultiplier);
+      const formatted = (scaled % 1 === 0) ? scaled : scaled.toFixed(1);
+      return `
+        <div class="ing-item" onclick="this.classList.toggle('checked')">
+          <div class="ing-check-circle">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ing-label">${ing.name}</div>
+          <div class="ing-qty">${formatted} ${ing.unit}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Steps
+    document.getElementById('stepsContainer').innerHTML = currentRecipe.steps.map((st, i) => `
+      <div class="step-numbered">
+        <div class="step-badge">${i + 1}</div>
+        <div class="step-desc">${st.text} <span style="color:var(--tint);font-weight:500;">(${st.mins} min)</span></div>
+      </div>
+    `).join('');
+  }
+
+  // Profile Preferences & Account Actions Handlers
+  let userSettings = {
+    name: 'Chef Guest',
+    bio: 'Home Cook · Snaffu Member',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    dietary: 'all',
+    units: 'metric',
+    pushNotifications: true,
+    haptics: true
+  };
+
+  function handleAvatarFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        userSettings.avatar = dataUrl;
+        document.getElementById('profileAvatarImg').src = dataUrl;
+        const homeAvatar = document.querySelector('.greeting-title-row .nav-profile-btn img');
+        if (homeAvatar) homeAvatar.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // ─── Edit Profile Slider Logic ───
+  function openEditProfileSlider() {
+    const editOverlay = document.getElementById('editProfileOverlay');
+    document.getElementById('editNameInput').value = userSettings.name;
+    document.getElementById('editBioInput').value = userSettings.bio;
+    editOverlay.classList.add('open');
+    setTimeout(() => {
+      const input = document.getElementById('editNameInput');
+      if (input) input.focus();
+    }, 180);
+  }
+
+  function closeEditProfileSlider(e) {
+    if (!e || e.target === document.getElementById('editProfileOverlay') || e.currentTarget === e.target) {
+      document.getElementById('editProfileOverlay').classList.remove('open');
+    }
+  }
+
+  function saveProfileChanges() {
+    const nameInput = document.getElementById('editNameInput');
+    const bioInput = document.getElementById('editBioInput');
+    const nameVal = (nameInput && nameInput.value.trim()) || 'Chef Guest';
+    const bioVal = (bioInput && bioInput.value.trim()) || 'Home Cook · Snaffu Member';
+
+    userSettings.name = nameVal;
+    userSettings.bio = bioVal;
+
+    // Update Profile page UI
+    const nameElem = document.getElementById('displayProfileName');
+    const bioElem = document.getElementById('displayProfileBio');
+    if (nameElem) nameElem.textContent = nameVal;
+    if (bioElem) bioElem.textContent = bioVal;
+
+    // Update Home page greeting header with first name
+    const hour = new Date().getHours();
+    let timePrefix = 'Good morning';
+    if (hour >= 12 && hour < 17) timePrefix = 'Good afternoon';
+    else if (hour >= 17) timePrefix = 'Good evening';
+    const first = nameVal.split(' ')[0] || 'Chef';
+    const greetingElem = document.getElementById('timeGreeting');
+    if (greetingElem) greetingElem.textContent = `${timePrefix}, ${first}`;
+
+    // Close the slider
+    document.getElementById('editProfileOverlay').classList.remove('open');
+  }
+
+  function updateDietaryPref(val) {
+    userSettings.dietary = val;
+  }
+
+  function updateUnits(val) {
+    userSettings.units = val;
+  }
+
+  function togglePushNotifications(val) {
+    userSettings.pushNotifications = val;
+  }
+
+  function toggleHaptics(val) {
+    userSettings.haptics = val;
+  }
+
+  function contactSupport() {
+    window.location.href = 'mailto:support@snaffu.app?subject=Snaffu%20App%20Support';
+  }
+
+  function handleLogOut() {
+    if (confirm('Are you sure you want to log out of Snaffu?')) {
+      alert('You have logged out successfully.');
+      closeProfilePage();
+    }
+  }
+
+  function handleDeleteAccount() {
+    if (confirm('Warning: Are you sure you want to delete your Snaffu account and erase your saved recipes? This will restart the app from scratch.')) {
+      // 1. Clear all persistent storage
+      localStorage.removeItem('snaffu_onboarding_completed');
+      localStorage.removeItem('snaffu_user_profile');
+      localStorage.removeItem('snaffu_saved_recipes');
+      localStorage.clear();
+
+      // 2. Reset user state to clean defaults
+      savedIds = [];
+      userSettings.name = 'Chef';
+      userSettings.bio = 'Home Cook · Snaffu Member';
+      userSettings.avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
+      userSettings.pushNotifications = true;
+      userSettings.haptics = true;
+      userSettings.unitMetric = 'metric';
+      userSettings.dietary = 'all';
+
+      renderSaved();
+      const pName = document.getElementById('profileNameDisplay');
+      if (pName) pName.textContent = userSettings.name;
+      const pBio = document.getElementById('profileBioDisplay');
+      if (pBio) pBio.textContent = userSettings.bio;
+
+      // 3. Close profile page and any open dialogs
+      closeProfileModal();
+      closeProfilePage();
+      const modalOverlay = document.getElementById('modalOverlay');
+      if (modalOverlay) modalOverlay.classList.remove('open');
+      const cameraOverlay = document.getElementById('cameraOverlay');
+      if (cameraOverlay) cameraOverlay.classList.remove('open');
+      const cookModeOverlay = document.getElementById('cookModeOverlay');
+      if (cookModeOverlay) cookModeOverlay.classList.remove('open');
+
+      // 4. Return to Home tab
+      const firstTab = document.querySelector('.island-tab');
+      if (firstTab) switchTab('home', firstTab);
+
+      // 5. Instantly take user to fresh Splash Screen & Onboarding
+      launchFreshAppExperience();
+    }
+  }
+
+  function toggleSaveCurrent() {
+    if (savedIds.includes(currentRecipe.id)) {
+      savedIds = savedIds.filter(id => id !== currentRecipe.id);
+    } else {
+      savedIds.push(currentRecipe.id);
+    }
+    renderRecipeModal();
+    renderSaved();
+  }
+
+  // Servings Stepper
+  document.getElementById('btnMinus').addEventListener('click', () => {
+    if (servingMultiplier > 0.5) {
+      servingMultiplier -= 0.5;
+      renderRecipeModal();
+    }
+  });
+  document.getElementById('btnPlus').addEventListener('click', () => {
+    if (servingMultiplier < 3.0) {
+      servingMultiplier += 0.5;
+      renderRecipeModal();
+    }
+  });
+
+  // ─── REAL CAMERA VIEWFINDER & PERMISSION LOGIC ───
+  let cameraStream = null;
+  let cameraFacing = 'environment';
+  let flashActive = false;
+
+  function openCameraView() {
+    const overlay = document.getElementById('cameraOverlay');
+    overlay.classList.add('open');
+    requestRealCamera();
+  }
+
+  function closeCameraView() {
+    stopCameraStream();
+    document.getElementById('cameraOverlay').classList.remove('open');
+  }
+
+  function stopCameraStream() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+    const video = document.getElementById('cameraVideo');
+    if (video) video.srcObject = null;
+  }
+
+  async function requestRealCamera() {
+    const fallback = document.getElementById('cameraFallback');
+    fallback.style.display = 'none';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      fallback.style.display = 'flex';
+      return;
+    }
+
+    try {
+      stopCameraStream();
+      const constraints = {
+        video: {
+          facingMode: { ideal: cameraFacing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      cameraStream = stream;
+      const video = document.getElementById('cameraVideo');
+      video.srcObject = stream;
+      video.play();
+    } catch (err) {
+      console.warn('Camera access denied or device has no camera:', err);
+      fallback.style.display = 'flex';
+    }
+  }
+
+  function flipCamera() {
+    cameraFacing = (cameraFacing === 'environment') ? 'user' : 'environment';
+    requestRealCamera();
+  }
+
+  function toggleFlash() {
+    flashActive = !flashActive;
+    const btn = document.getElementById('camFlashBtn');
+    if (flashActive) {
+      btn.style.background = 'rgba(255,204,0,0.85)';
+      btn.style.color = '#000';
+    } else {
+      btn.style.background = 'rgba(255,255,255,.2)';
+      btn.style.color = '#fff';
+    }
+  }
+
+  function captureLivePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+
+    if (cameraStream && video.videoWidth) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
+
+    closeCameraView();
+
+    const scanOverlay = document.getElementById('scanOverlay');
+    scanOverlay.classList.add('active');
+
+    setTimeout(() => {
+      scanOverlay.classList.remove('active');
+      openRecipe(catalog[0].id);
+    }, 1300);
+  }
+
+  function handleFileSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    closeCameraView();
+    const scanOverlay = document.getElementById('scanOverlay');
+    scanOverlay.classList.add('active');
+
+    setTimeout(() => {
+      scanOverlay.classList.remove('active');
+      openRecipe(catalog[0].id);
+    }, 1200);
+  }
+
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modalOverlay')) {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+  });
+
+
+  // ─── COOK MODE LOGIC ───
+  function startCookMode() {
+    cookStepIndex = 0;
+    document.getElementById('cookMealTitle').textContent = currentRecipe.name;
+    document.getElementById('cookModeOverlay').classList.add('open');
+    loadCookStep();
+  }
+
+  function closeCookMode() {
+    stopCookTimer();
+    document.getElementById('cookModeOverlay').classList.remove('open');
+  }
+
+  function loadCookStep() {
+    stopCookTimer();
+    const step = currentRecipe.steps[cookStepIndex];
+    const totalSteps = currentRecipe.steps.length;
+
+    document.getElementById('cookStepSub').textContent = `Step ${cookStepIndex + 1} of ${totalSteps}`;
+    document.getElementById('cookProgressFill').style.width = `${((cookStepIndex + 1) / totalSteps) * 100}%`;
+    document.getElementById('cookStepBadge').textContent = `STEP ${cookStepIndex + 1}`;
+    document.getElementById('cookInstructionText').textContent = step.text;
+
+    timerRemainingSeconds = (step.mins || 5) * 60;
+    updateTimerDisplay();
+
+    document.getElementById('cookPrevBtn').disabled = (cookStepIndex === 0);
+    document.getElementById('cookPrevBtn').style.opacity = (cookStepIndex === 0) ? '0.3' : '1';
+
+    if (cookStepIndex === totalSteps - 1) {
+      document.getElementById('cookNextLabel').textContent = 'Finish Cooking';
+    } else {
+      document.getElementById('cookNextLabel').textContent = 'Next Step';
+    }
+  }
+
+  function prevCookStep() {
+    if (cookStepIndex > 0) {
+      cookStepIndex--;
+      loadCookStep();
+    }
+  }
+
+  function nextCookStep() {
+    const totalSteps = currentRecipe.steps.length;
+    if (cookStepIndex < totalSteps - 1) {
+      cookStepIndex++;
+      loadCookStep();
+    } else {
+      closeCookMode();
+    }
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(timerRemainingSeconds / 60);
+    const secs = timerRemainingSeconds % 60;
+    document.getElementById('cookTimerDisplay').textContent =
+      `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function toggleCookTimer() {
+    if (isTimerRunning) stopCookTimer();
+    else startCookTimer();
+  }
+
+  function startCookTimer() {
+    isTimerRunning = true;
+    document.getElementById('cookTimerBtn').innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#fff;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    document.getElementById('cookTimerLabel').textContent = 'Timer Running...';
+
+    timerInterval = setInterval(() => {
+      if (timerRemainingSeconds > 0) {
+        timerRemainingSeconds--;
+        updateTimerDisplay();
+      } else {
+        stopCookTimer();
+        document.getElementById('cookTimerLabel').textContent = 'Time Up!';
+      }
+    }, 1000);
+  }
+
+  function stopCookTimer() {
+    isTimerRunning = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    document.getElementById('cookTimerBtn').innerHTML = '<svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#fff;"><polygon points="6 4 19 12 6 20 6 4"/></svg>';
+    document.getElementById('cookTimerLabel').textContent = 'Step Timer';
+  }
+
+  // ─── SPLASH & ONBOARDING CONTROLLER ───
+  let currentOnboardingIndex = 0;
+  const totalOnboardingSlides = 3;
+
+  function initSplashAndOnboarding() {
+    const hasSeenOnboarding = localStorage.getItem('snaffu_onboarding_completed') === 'true';
+    const splash = document.getElementById('splashScreen');
+    const onboarding = document.getElementById('onboardingScreen');
+
+    // Display splash for 1.3s
+    setTimeout(() => {
+      if (splash) splash.classList.add('fade-out');
+
+      if (!hasSeenOnboarding) {
+        setTimeout(() => {
+          if (onboarding) onboarding.classList.add('active');
+        }, 150);
+      }
+    }, 1300);
+  }
+
+  function launchFreshAppExperience() {
+    closeProfileModal();
+    closeProfilePage();
+
+    const splash = document.getElementById('splashScreen');
+    const onboarding = document.getElementById('onboardingScreen');
+
+    goToOnboardingSlide(0);
+
+    // Make splash screen appear instantly
+    if (splash) {
+      splash.style.transition = 'none';
+      splash.classList.remove('fade-out');
+      splash.style.opacity = '1';
+      splash.style.visibility = 'visible';
+      splash.style.transform = 'scale(1)';
+      void splash.offsetHeight; // force reflow
+      splash.style.transition = '';
+    }
+
+    if (onboarding) {
+      onboarding.classList.remove('active');
+    }
+
+    // Play splash for 1.3s then smoothly transition into onboarding
+    setTimeout(() => {
+      if (splash) splash.classList.add('fade-out');
+      setTimeout(() => {
+        if (onboarding) {
+          onboarding.classList.add('active');
+        }
+      }, 180);
+    }, 1300);
+  }
+
+  function goToOnboardingSlide(index) {
+    if (index < 0 || index >= totalOnboardingSlides) return;
+    currentOnboardingIndex = index;
+
+    // Update slides
+    for (let i = 0; i < totalOnboardingSlides; i++) {
+      const slide = document.getElementById(`onboardingSlide${i}`);
+      if (slide) {
+        slide.classList.remove('current', 'passed');
+        if (i === currentOnboardingIndex) {
+          slide.classList.add('current');
+        } else if (i < currentOnboardingIndex) {
+          slide.classList.add('passed');
+        }
+      }
+    }
+
+    // Update dots
+    const dots = document.querySelectorAll('.onboarding-dot');
+    dots.forEach((dot, idx) => {
+      if (idx === currentOnboardingIndex) dot.classList.add('active');
+      else dot.classList.remove('active');
+    });
+
+    // Update button label only (no icon)
+    const label = document.getElementById('onboardingBtnLabel');
+    if (label) {
+      label.textContent = currentOnboardingIndex === totalOnboardingSlides - 1
+        ? 'Get Started'
+        : 'Continue';
+    }
+  }
+
+  function nextOnboardingSlide() {
+    if (currentOnboardingIndex < totalOnboardingSlides - 1) {
+      goToOnboardingSlide(currentOnboardingIndex + 1);
+    } else {
+      finishOnboarding();
+    }
+  }
+
+  function skipOnboarding() {
+    finishOnboarding();
+  }
+
+  function finishOnboarding() {
+    localStorage.setItem('snaffu_onboarding_completed', 'true');
+    const onboarding = document.getElementById('onboardingScreen');
+    if (onboarding) onboarding.classList.remove('active');
+  }
+
+  // Initial renders
+  renderFilterChips();
+  renderInspirationCarousel();
+  renderHomeSnaps();
+  renderAllSnaps();
+  renderSaved();
+  initSplashAndOnboarding();
+</script>
+
+</body>
+</html>

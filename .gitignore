@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+.idea/
+.vscode/
+.build/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
