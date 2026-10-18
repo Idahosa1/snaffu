@@ -67,6 +67,41 @@
       z-index: 300;
     }
 
+    @media (max-width: 500px) {
+      body {
+        padding: 0;
+        margin: 0;
+        background: var(--bg);
+        min-height: 100dvh;
+        width: 100vw;
+        overflow: hidden;
+      }
+
+      .phone-frame {
+        width: 100vw;
+        height: 100dvh;
+        max-width: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .dynamic-island {
+        display: none;
+      }
+
+      .top-glass-nav {
+        padding-top: max(48px, calc(12px + env(safe-area-inset-top, 0px)));
+      }
+
+      .scroll-pane {
+        top: max(88px, calc(52px + env(safe-area-inset-top, 0px)));
+      }
+
+      .floating-music-bar-container {
+        bottom: max(20px, calc(12px + env(safe-area-inset-bottom, 0px)));
+      }
+    }
+
     /* ─── APPLE MUSIC FLOATING DOCK (3 TABS + SNAP CIRCLE) ─── */
     .floating-music-bar-container {
       position: absolute;
