@@ -13,6 +13,7 @@ public struct ProfileView: View {
     @AppStorage("measurementSystem") private var measurementSystem: String = "Metric (g, ml)"
     @AppStorage("pushNotifications") private var pushNotifications: Bool = true
     @AppStorage("hapticFeedback") private var hapticFeedback: Bool = true
+    @AppStorage("appAppearance") private var appAppearance: String = "System"
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = true
 
     @State private var showingAvatarPicker: Bool = false
@@ -117,7 +118,16 @@ public struct ProfileView: View {
 
                 // 3. Cooking Preferences
                 Section("Preferences") {
-                    Picker("Dietary Preference", selection: $dietaryPreference) {
+                    Picker(selection: $appAppearance) {
+                        Text("System").tag("System")
+                        Text("Light").tag("Light")
+                        Text("Dark").tag("Dark")
+                    } label: {
+                        Label("Appearance", systemImage: "circle.righthalf.filled")
+                    }
+                    .pickerStyle(.menu)
+
+                    Picker(selection: $dietaryPreference) {
                         Text("None / Everything").tag("None")
                         Text("Vegetarian").tag("Vegetarian")
                         Text("Vegan").tag("Vegan")
@@ -125,24 +135,34 @@ public struct ProfileView: View {
                         Text("Dairy-Free").tag("Dairy-Free")
                         Text("Pescatarian").tag("Pescatarian")
                         Text("Keto").tag("Keto")
+                    } label: {
+                        Label("Dietary Preference", systemImage: "fork.knife")
                     }
+                    .pickerStyle(.menu)
 
-                    Picker("Measurement Units", selection: $measurementSystem) {
+                    Picker(selection: $measurementSystem) {
                         Text("Metric (g, ml)").tag("Metric (g, ml)")
                         Text("Imperial (oz, cups)").tag("Imperial (oz, cups)")
                         Text("US Customary").tag("US Customary")
+                    } label: {
+                        Label("Units", systemImage: "scalemass")
+                    }
+                    .pickerStyle(.menu)
+
+                    Toggle(isOn: $pushNotifications) {
+                        Label("Push Notifications", systemImage: "bell")
                     }
 
-                    Toggle("Push Notifications", isOn: $pushNotifications)
-
-                    Toggle("Haptic Feedback on Snap", isOn: $hapticFeedback)
+                    Toggle(isOn: $hapticFeedback) {
+                        Label("Haptics", systemImage: "waveform")
+                    }
                 }
 
                 // 4. Support & About
                 Section("Support & About") {
                     Link(destination: URL(string: "mailto:support@snaffu.app?subject=Snaffu%20Support")!) {
                         HStack {
-                            Text("Contact & Support")
+                            Label("Contact & Support", systemImage: "bubble.left.and.bubble.right")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(Color.primary)
                             Spacer()
@@ -156,7 +176,7 @@ public struct ProfileView: View {
                     }
 
                     HStack {
-                        Text("Recognition Engine")
+                        Label("Recognition Engine", systemImage: "cpu")
                             .font(.system(size: 15, weight: .medium))
                         Spacer()
                         Text("Local Recipe Engine")
@@ -165,7 +185,7 @@ public struct ProfileView: View {
                     }
 
                     HStack {
-                        Text("App Version")
+                        Label("App Version", systemImage: "info.circle")
                             .font(.system(size: 15, weight: .medium))
                         Spacer()
                         Text("Snaffu 1.0.0 (v1 Offline)")
